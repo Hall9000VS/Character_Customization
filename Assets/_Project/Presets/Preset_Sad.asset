@@ -25,5 +25,5 @@ MonoBehaviour:
   - blendshapeName: browL_DOWN
     weight: 45
   skin:
-    tint: {r: 0.95, g: 0.84, b: 0.8, a: 1}
-    darkness: 0.55
+    tint: {r: 0.9811321, g: 0.9709018, b: 0.96724814, a: 1}
+    darkness: 0.294

@@ -25,5 +25,5 @@ MonoBehaviour:
   - blendshapeName: wideL
     weight: 35
   skin:
-    tint: {r: 1, g: 0.93, b: 0.9, a: 1}
+    tint: {r: 0.990566, g: 0.990566, b: 0.990566, a: 1}
     darkness: 0.35
