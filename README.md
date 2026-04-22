@@ -2,7 +2,7 @@
 Data-driven facial customization foundation for Unity.
 
 ## Demo
-[YouTube link — coming]
+[YouTube demo](https://www.youtube.com/watch?v=LbExHrUkw8Y)
 
 <!-- GIF: docs/preview.gif -->
 
