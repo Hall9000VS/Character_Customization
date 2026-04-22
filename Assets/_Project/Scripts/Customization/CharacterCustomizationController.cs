@@ -8,10 +8,17 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class CharacterCustomizationController : MonoBehaviour
 {
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    private static readonly int SkinDarknessId = Shader.PropertyToID("_SkinDarkness");
+
     [SerializeField] private SkinnedMeshRenderer faceMesh;
     [SerializeField] private Renderer bodyRenderer;
     [SerializeField] private List<FacialPreset> presets = new List<FacialPreset>();
     [SerializeField] private float transitionDuration = 0.3f;
+
+    private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+    private Color currentSkinTint = Color.white;
+    private float currentSkinDarkness = 0.5f;
 
     /// <summary>
     /// Gets the presets currently assigned to this controller.
@@ -27,8 +34,11 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     {
         if (presets.Count > 0 && presets[0] != null)
         {
-            ApplyPreset(presets[0]);
+            ApplyPresetInstant(presets[0]);
+            return;
         }
+
+        ApplySkinProperties();
     }
 
     /// <summary>
@@ -56,8 +66,7 @@ public sealed class CharacterCustomizationController : MonoBehaviour
             return;
         }
 
-        CurrentPreset = preset;
-        ApplyBlendshapes(preset);
+        ApplyPresetInstant(preset);
     }
 
     /// <summary>
@@ -66,6 +75,8 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     /// <param name="value01">A normalized darkness value in the 0..1 range.</param>
     public void SetSkinDarkness(float value01)
     {
+        currentSkinDarkness = Mathf.Clamp01(value01);
+        ApplySkinProperties();
     }
 
     /// <summary>
@@ -74,6 +85,8 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     /// <param name="color">The tint color to apply through a material property block.</param>
     public void SetSkinTint(Color color)
     {
+        currentSkinTint = color;
+        ApplySkinProperties();
     }
 
     [ContextMenu("Apply First Preset")]
@@ -100,6 +113,15 @@ public sealed class CharacterCustomizationController : MonoBehaviour
         SetSkinDarkness(0.8f);
     }
 
+    private void ApplyPresetInstant(FacialPreset preset)
+    {
+        CurrentPreset = preset;
+        ApplyBlendshapes(preset);
+        currentSkinTint = GetPresetTint(preset);
+        currentSkinDarkness = GetPresetDarkness(preset);
+        ApplySkinProperties();
+    }
+
     private void ApplyBlendshapes(FacialPreset preset)
     {
         var mesh = faceMesh != null ? faceMesh.sharedMesh : null;
@@ -124,5 +146,28 @@ public sealed class CharacterCustomizationController : MonoBehaviour
 
             faceMesh.SetBlendShapeWeight(index, entry.weight);
         }
+    }
+
+    private void ApplySkinProperties()
+    {
+        if (bodyRenderer == null)
+        {
+            return;
+        }
+
+        bodyRenderer.GetPropertyBlock(propertyBlock);
+        propertyBlock.SetColor(BaseColorId, currentSkinTint);
+        propertyBlock.SetFloat(SkinDarknessId, currentSkinDarkness);
+        bodyRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private static Color GetPresetTint(FacialPreset preset)
+    {
+        return preset != null && preset.skin != null ? preset.skin.tint : Color.white;
+    }
+
+    private static float GetPresetDarkness(FacialPreset preset)
+    {
+        return preset != null && preset.skin != null ? preset.skin.darkness : 0.5f;
     }
 }
