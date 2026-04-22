@@ -10,6 +10,7 @@ public sealed class CharacterCustomizationController : MonoBehaviour
 {
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int SkinDarknessId = Shader.PropertyToID("_SkinDarkness");
+    private const int SkinMaterialIndex = 0;
 
     [SerializeField] private SkinnedMeshRenderer faceMesh;
     [SerializeField] private Renderer bodyRenderer;
@@ -198,16 +199,19 @@ public sealed class CharacterCustomizationController : MonoBehaviour
 
     private void ApplySkinProperties()
     {
-        if (bodyRenderer == null)
+        if (bodyRenderer == null && faceMesh == null)
         {
             return;
         }
 
         EnsurePropertyBlock();
-        bodyRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetColor(BaseColorId, currentSkinTint);
-        propertyBlock.SetFloat(SkinDarknessId, currentSkinDarkness);
-        bodyRenderer.SetPropertyBlock(propertyBlock);
+        var effectiveColor = GetEffectiveSkinColor();
+        ApplySkinProperties(bodyRenderer, SkinMaterialIndex, effectiveColor);
+
+        if (!ReferenceEquals(faceMesh, bodyRenderer))
+        {
+            ApplySkinProperties(faceMesh, SkinMaterialIndex, effectiveColor);
+        }
     }
 
     private void EnsurePropertyBlock()
@@ -216,6 +220,28 @@ public sealed class CharacterCustomizationController : MonoBehaviour
         {
             propertyBlock = new MaterialPropertyBlock();
         }
+    }
+
+    private void ApplySkinProperties(Renderer targetRenderer, int materialIndex, Color effectiveColor)
+    {
+        if (targetRenderer == null || materialIndex < 0 || materialIndex >= targetRenderer.sharedMaterials.Length)
+        {
+            return;
+        }
+
+        propertyBlock.Clear();
+        targetRenderer.GetPropertyBlock(propertyBlock, materialIndex);
+        propertyBlock.SetColor(BaseColorId, effectiveColor);
+        propertyBlock.SetFloat(SkinDarknessId, currentSkinDarkness);
+        targetRenderer.SetPropertyBlock(propertyBlock, materialIndex);
+    }
+
+    private Color GetEffectiveSkinColor()
+    {
+        var lightness = Mathf.Lerp(1f, 0.35f, currentSkinDarkness);
+        var effectiveColor = currentSkinTint * lightness;
+        effectiveColor.a = currentSkinTint.a;
+        return effectiveColor;
     }
 
     private void PreviewPreset(int index)
