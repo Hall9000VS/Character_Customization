@@ -16,7 +16,7 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     [SerializeField] private List<FacialPreset> presets = new List<FacialPreset>();
     [SerializeField] private float transitionDuration = 0.3f;
 
-    private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+    private MaterialPropertyBlock propertyBlock;
     private Coroutine activeTransition;
     private Color currentSkinTint = Color.white;
     private float currentSkinDarkness = 0.5f;
@@ -30,6 +30,11 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     /// Gets the most recently requested preset.
     /// </summary>
     public FacialPreset CurrentPreset { get; private set; }
+
+    private void Awake()
+    {
+        EnsurePropertyBlock();
+    }
 
     private void Start()
     {
@@ -198,10 +203,19 @@ public sealed class CharacterCustomizationController : MonoBehaviour
             return;
         }
 
+        EnsurePropertyBlock();
         bodyRenderer.GetPropertyBlock(propertyBlock);
         propertyBlock.SetColor(BaseColorId, currentSkinTint);
         propertyBlock.SetFloat(SkinDarknessId, currentSkinDarkness);
         bodyRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private void EnsurePropertyBlock()
+    {
+        if (propertyBlock == null)
+        {
+            propertyBlock = new MaterialPropertyBlock();
+        }
     }
 
     private void PreviewPreset(int index)
