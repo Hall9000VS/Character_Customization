@@ -15,15 +15,15 @@ MonoBehaviour:
   displayName: Surprised
   blendshapes:
   - blendshapeName: open
-    weight: 85
+    weight: 100
   - blendshapeName: browR_UP
-    weight: 75
+    weight: 100
   - blendshapeName: browL_UP
-    weight: 75
+    weight: 100
   - blendshapeName: wideR
-    weight: 55
+    weight: 85
   - blendshapeName: wideL
-    weight: 55
+    weight: 85
   skin:
     tint: {r: 0.88, g: 0.74, b: 0.68, a: 1}
     darkness: 0.72

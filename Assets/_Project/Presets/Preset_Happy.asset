@@ -17,13 +17,13 @@ MonoBehaviour:
   - blendshapeName: smile
     weight: 100
   - blendshapeName: browR_UP
-    weight: 35
+    weight: 55
   - blendshapeName: browL_UP
-    weight: 35
+    weight: 55
   - blendshapeName: wideR
-    weight: 15
+    weight: 35
   - blendshapeName: wideL
-    weight: 15
+    weight: 35
   skin:
     tint: {r: 1, g: 0.93, b: 0.9, a: 1}
     darkness: 0.35

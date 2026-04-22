@@ -15,15 +15,15 @@ MonoBehaviour:
   displayName: Sad
   blendshapes:
   - blendshapeName: sad
-    weight: 80
+    weight: 100
   - blendshapeName: browR_SAD
-    weight: 60
+    weight: 85
   - blendshapeName: browL_SAD
-    weight: 60
+    weight: 85
   - blendshapeName: browR_DOWN
-    weight: 25
+    weight: 45
   - blendshapeName: browL_DOWN
-    weight: 25
+    weight: 45
   skin:
     tint: {r: 0.95, g: 0.84, b: 0.8, a: 1}
     darkness: 0.55
