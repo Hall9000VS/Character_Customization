@@ -17,6 +17,7 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     [SerializeField] private float transitionDuration = 0.3f;
 
     private readonly MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+    private Coroutine activeTransition;
     private Color currentSkinTint = Color.white;
     private float currentSkinDarkness = 0.5f;
 
@@ -39,6 +40,11 @@ public sealed class CharacterCustomizationController : MonoBehaviour
         }
 
         ApplySkinProperties();
+    }
+
+    private void OnDisable()
+    {
+        CancelActiveTransition();
     }
 
     /// <summary>
@@ -66,7 +72,16 @@ public sealed class CharacterCustomizationController : MonoBehaviour
             return;
         }
 
-        ApplyPresetInstant(preset);
+        CancelActiveTransition();
+        CurrentPreset = preset;
+
+        if (!isActiveAndEnabled || transitionDuration <= 0f)
+        {
+            ApplyPresetInstant(preset);
+            return;
+        }
+
+        activeTransition = StartCoroutine(TransitionToPreset(preset));
     }
 
     /// <summary>
@@ -92,19 +107,19 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     [ContextMenu("Apply First Preset")]
     private void ApplyFirstPresetFromContext()
     {
-        ApplyPreset(0);
+        PreviewPreset(0);
     }
 
     [ContextMenu("Apply Second Preset")]
     private void ApplySecondPresetFromContext()
     {
-        ApplyPreset(1);
+        PreviewPreset(1);
     }
 
     [ContextMenu("Apply Third Preset")]
     private void ApplyThirdPresetFromContext()
     {
-        ApplyPreset(2);
+        PreviewPreset(2);
     }
 
     [ContextMenu("Preview Darker Skin")]
@@ -115,11 +130,39 @@ public sealed class CharacterCustomizationController : MonoBehaviour
 
     private void ApplyPresetInstant(FacialPreset preset)
     {
+        CancelActiveTransition();
         CurrentPreset = preset;
         ApplyBlendshapes(preset);
         currentSkinTint = GetPresetTint(preset);
         currentSkinDarkness = GetPresetDarkness(preset);
         ApplySkinProperties();
+    }
+
+    private IEnumerator TransitionToPreset(FacialPreset preset)
+    {
+        var targets = CaptureTargets(preset);
+        var startTint = currentSkinTint;
+        var startDarkness = currentSkinDarkness;
+        var targetTint = GetPresetTint(preset);
+        var targetDarkness = GetPresetDarkness(preset);
+        var elapsed = 0f;
+
+        while (elapsed < transitionDuration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / transitionDuration);
+            ApplyBlendshapeTargets(targets, t);
+            currentSkinTint = Color.Lerp(startTint, targetTint, t);
+            currentSkinDarkness = Mathf.Lerp(startDarkness, targetDarkness, t);
+            ApplySkinProperties();
+            yield return null;
+        }
+
+        ApplyBlendshapeTargets(targets, 1f);
+        currentSkinTint = targetTint;
+        currentSkinDarkness = targetDarkness;
+        ApplySkinProperties();
+        activeTransition = null;
     }
 
     private void ApplyBlendshapes(FacialPreset preset)
@@ -161,6 +204,76 @@ public sealed class CharacterCustomizationController : MonoBehaviour
         bodyRenderer.SetPropertyBlock(propertyBlock);
     }
 
+    private void PreviewPreset(int index)
+    {
+        if (index < 0 || index >= presets.Count || presets[index] == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            ApplyPreset(index);
+            return;
+        }
+
+        ApplyPresetInstant(presets[index]);
+    }
+
+    private List<BlendshapeTarget> CaptureTargets(FacialPreset preset)
+    {
+        var targets = new List<BlendshapeTarget>();
+        var mesh = faceMesh != null ? faceMesh.sharedMesh : null;
+        if (mesh == null || preset == null || preset.blendshapes == null)
+        {
+            return targets;
+        }
+
+        for (var i = 0; i < preset.blendshapes.Count; i++)
+        {
+            var entry = preset.blendshapes[i];
+            if (entry == null || string.IsNullOrWhiteSpace(entry.blendshapeName))
+            {
+                continue;
+            }
+
+            var index = mesh.GetBlendShapeIndex(entry.blendshapeName);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            targets.Add(new BlendshapeTarget(index, faceMesh.GetBlendShapeWeight(index), entry.weight));
+        }
+
+        return targets;
+    }
+
+    private void ApplyBlendshapeTargets(List<BlendshapeTarget> targets, float t)
+    {
+        if (faceMesh == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < targets.Count; i++)
+        {
+            var target = targets[i];
+            faceMesh.SetBlendShapeWeight(target.Index, Mathf.Lerp(target.From, target.To, t));
+        }
+    }
+
+    private void CancelActiveTransition()
+    {
+        if (activeTransition == null)
+        {
+            return;
+        }
+
+        StopCoroutine(activeTransition);
+        activeTransition = null;
+    }
+
     private static Color GetPresetTint(FacialPreset preset)
     {
         return preset != null && preset.skin != null ? preset.skin.tint : Color.white;
@@ -169,5 +282,19 @@ public sealed class CharacterCustomizationController : MonoBehaviour
     private static float GetPresetDarkness(FacialPreset preset)
     {
         return preset != null && preset.skin != null ? preset.skin.darkness : 0.5f;
+    }
+
+    private readonly struct BlendshapeTarget
+    {
+        public BlendshapeTarget(int index, float from, float to)
+        {
+            Index = index;
+            From = from;
+            To = to;
+        }
+
+        public int Index { get; }
+        public float From { get; }
+        public float To { get; }
     }
 }
